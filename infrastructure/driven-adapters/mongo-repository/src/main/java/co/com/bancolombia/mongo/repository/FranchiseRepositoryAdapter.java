@@ -33,6 +33,7 @@ public class FranchiseRepositoryAdapter implements FranchiseRepositoryPort {
         log.info("Find Franchise by id {}", id);
         return this.franchiseMongoRepository
                 .findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Franchise not found")))
                 .map(FranchiseMapper::toDomain)
                 .doOnError(f -> log.info(message, id));
     }
@@ -52,9 +53,8 @@ public class FranchiseRepositoryAdapter implements FranchiseRepositoryPort {
     }
 
     @Override
-    public Mono<Franchise> update(String id, String name) {
+    public Mono<Franchise> updateFranchiseName(String id, String name) {
         return this.franchiseMongoRepository.findById(id)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Franchise not found")))
                 .map(doc -> {
                     doc.setName(name);
                     return doc;
