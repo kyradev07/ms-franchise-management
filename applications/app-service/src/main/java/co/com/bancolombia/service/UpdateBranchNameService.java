@@ -47,11 +47,7 @@ public class UpdateBranchNameService implements UpdateBranchNameUseCase {
                     branchDb.setName(branch.getName());
 
                     return this.franchiseRepositoryPort.save(franchise)
-                            .map(fr -> franchise.getBranches()
-                                    .stream()
-                                    .filter(br -> br.getId().equals(branch.getId()))
-                                    .findFirst().orElse(branch)
-                            )
+                            .map(fr -> Filters.findBranch(franchise, branch))
                             .doOnSuccess(updatedF -> log.info("Branch name {} was updated successfully!", updatedF.getName()))
                             .doOnError(error -> log.error("Error while updating Branch name {}", error.getMessage()));
                 })
