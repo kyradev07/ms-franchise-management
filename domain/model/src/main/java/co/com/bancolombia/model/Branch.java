@@ -9,7 +9,7 @@ public final class Branch {
 
     public Branch(String id, String name, List<Product> products) {
         this.id = id;
-        this.name = name;
+        this.name = name.trim().toLowerCase();
         this.products = products;
     }
 
