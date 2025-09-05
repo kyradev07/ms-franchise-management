@@ -1,4 +1,4 @@
-package co.com.bancolombia.usecase.in;
+package co.com.bancolombia.usecase.in.franchise;
 
 import co.com.bancolombia.model.Franchise;
 import reactor.core.publisher.Mono;
