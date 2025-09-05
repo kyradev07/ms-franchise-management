@@ -1,6 +1,7 @@
 package co.com.bancolombia.api.mappers;
 
 import co.com.bancolombia.api.dto.BranchDTO;
+import co.com.bancolombia.api.dto.ProductDTO;
 import co.com.bancolombia.model.Branch;
 import co.com.bancolombia.model.Product;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,15 @@ public class BranchMapperDTO {
 
         List<Product> productDTOS = new ArrayList<>();
 
-        return new Branch(null, branchDTO.getName(), productDTOS);
+        return new Branch(null, branchDTO.getName().trim().toLowerCase(), productDTOS);
 
+    }
+
+    public static BranchDTO toDTO(Branch branch) {
+        log.debug("Converting BranchModel to BranchDTO");
+
+        List<ProductDTO> productDTOS = new ArrayList<>();
+
+        return new BranchDTO(branch.getId(), branch.getName(), productDTOS);
     }
 }
