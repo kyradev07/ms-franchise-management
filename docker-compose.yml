@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: mongo-local
+    ports:
+      - "27017:27017"          # expone Mongo a tu host en 27017
+    environment:
+      MONGO_INITDB_DATABASE: test
+      # Si NO quieres usuarios, deja así y tendrás acceso sin auth
+      # Si quieres usuarios, descomenta las 3 líneas de abajo y ajusta la URI en el paso 2
+      # MONGO_INITDB_ROOT_USERNAME: root
+      # MONGO_INITDB_ROOT_PASSWORD: secret
+      # MONGO_INITDB_DATABASE: test
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+    # opcional: healthcheck simple
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo_data:
