@@ -29,7 +29,7 @@ public class UpdateFranchiseNameService implements UpdateFranchiseNameUseCase {
                     return Mono.<Franchise>error(new DuplicateFranchiseException(fixedName));
                 })
                 .switchIfEmpty(
-                        this.franchiseRepositoryPort.update(franchiseId, name)
+                        this.franchiseRepositoryPort.updateFranchiseName(franchiseId, name)
                                 .doOnSuccess(updatedF -> log.info("Franchise {} created successfully!", updatedF.getName()))
                                 .doOnError(error -> log.error("Error while updating Franchise {}", error.getMessage()))
                 )
