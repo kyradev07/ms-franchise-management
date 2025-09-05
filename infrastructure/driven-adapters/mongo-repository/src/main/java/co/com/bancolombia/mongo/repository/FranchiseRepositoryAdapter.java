@@ -14,6 +14,7 @@ import reactor.core.publisher.Mono;
 public class FranchiseRepositoryAdapter implements FranchiseRepositoryPort {
 
     private final FranchiseMongoRepository franchiseMongoRepository;
+    private final String message = "Franchise not found {}";
 
     public FranchiseRepositoryAdapter(FranchiseMongoRepository franchiseMongoRepository) {
         this.franchiseMongoRepository = franchiseMongoRepository;
@@ -24,12 +25,16 @@ public class FranchiseRepositoryAdapter implements FranchiseRepositoryPort {
         return this.franchiseMongoRepository
                 .save(FranchiseMapper.toDocument(franchise))
                 .map(FranchiseMapper::toDomain)
-                .doOnSuccess(f -> log.info("Franchise {} save success.", f.getName()));
+                .doOnSuccess(f -> log.info("Franchise {} was save success.", f.getName()));
     }
 
     @Override
     public Mono<Franchise> findById(String id) {
-        return null;
+        log.info("Find Franchise by id {}", id);
+        return this.franchiseMongoRepository
+                .findById(id)
+                .map(FranchiseMapper::toDomain)
+                .doOnError(f -> log.info(message, id));
     }
 
     @Override
@@ -37,12 +42,25 @@ public class FranchiseRepositoryAdapter implements FranchiseRepositoryPort {
         log.info("Find Franchise by name {}", name);
         return this.franchiseMongoRepository
                 .findByName(name)
-                .doOnNext(d -> log.info("valor id {}", d.getId()))
-                .map(FranchiseMapper::toDomain).doOnError(f -> log.info("Franchise {} not found.", name));
+                .map(FranchiseMapper::toDomain)
+                .doOnError(f -> log.info(message, name));
     }
 
     @Override
     public Flux<Franchise> findAll() {
         return null;
+    }
+
+    @Override
+    public Mono<Franchise> update(String id, String name) {
+        return this.franchiseMongoRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Franchise not found")))
+                .map(doc -> {
+                    doc.setName(name);
+                    return doc;
+                })
+                .flatMap(this.franchiseMongoRepository::save)
+                .map(FranchiseMapper::toDomain)
+                .doOnSuccess(f -> log.info("Franchise {} was updated.", f.getName()));
     }
 }
