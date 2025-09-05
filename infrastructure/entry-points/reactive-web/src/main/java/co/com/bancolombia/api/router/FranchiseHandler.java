@@ -7,6 +7,7 @@ import co.com.bancolombia.api.validations.MissingRequestBodyException;
 import co.com.bancolombia.api.validations.ValidationFilter;
 import co.com.bancolombia.usecase.exceptions.DuplicateFranchiseException;
 import co.com.bancolombia.usecase.in.franchise.CreateFranchiseUseCase;
+import co.com.bancolombia.usecase.in.franchise.UpdateFranchiseNameUseCase;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -23,15 +24,19 @@ import java.util.List;
 public class FranchiseHandler {
 
     private final CreateFranchiseUseCase createFranchiseUseCase;
+    private final UpdateFranchiseNameUseCase updateFranchiseNameUseCase;
     private final ValidationFilter validatorFilter;
 
-    public FranchiseHandler(CreateFranchiseUseCase createFranchiseUseCase, ValidationFilter validatorFilter) {
+    public FranchiseHandler(
+            CreateFranchiseUseCase createFranchiseUseCase,
+            UpdateFranchiseNameUseCase updateFranchiseNameUseCase,
+            ValidationFilter validatorFilter) {
         this.createFranchiseUseCase = createFranchiseUseCase;
+        this.updateFranchiseNameUseCase = updateFranchiseNameUseCase;
         this.validatorFilter = validatorFilter;
     }
 
     public Mono<ServerResponse> createFranchise(ServerRequest serverRequest) {
-        log.info("Franchise request {}", serverRequest.uri());
         return serverRequest.bodyToMono(FranchiseDTO.class)
                 .switchIfEmpty(Mono.error(new MissingRequestBodyException("Body cannot be null")))
                 .map(validatorFilter::validate)
@@ -53,6 +58,32 @@ public class FranchiseHandler {
                                 .bodyValue(new ErrorMessage(e.getMessage())))
                 .onErrorResume(RuntimeException.class,
                         e -> ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).bodyValue(new ErrorMessage(e.getMessage())));
+    }
+
+    public Mono<ServerResponse> updateFranchiseName(ServerRequest serverRequest) {
+        String id = serverRequest.pathVariable("id");
+        return serverRequest.bodyToMono(FranchiseDTO.class)
+                .switchIfEmpty(Mono.error(new MissingRequestBodyException("Body cannot be null")))
+                .map(validatorFilter::validate)
+                .map(FranchisMapperDTO::toDomain)
+                .flatMap(franchise -> this.updateFranchiseNameUseCase.updateName(id, franchise.getName()))
+                .map(FranchisMapperDTO::toDTO)
+                .flatMap(ServerResponse.status(HttpStatus.CREATED)::bodyValue)
+                .onErrorResume(ConstraintViolationException.class,
+                        e -> ServerResponse.badRequest()
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(ValidationErrorResponse.from(e)))
+                .onErrorResume(MissingRequestBodyException.class,
+                        e -> ServerResponse.badRequest()
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(new ErrorMessage(e.getMessage())))
+                .onErrorResume(DuplicateFranchiseException.class,
+                        e -> ServerResponse.badRequest()
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(new ErrorMessage(e.getMessage())))
+                .onErrorResume(RuntimeException.class,
+                        e -> ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).bodyValue(new ErrorMessage(e.getMessage())));
+
     }
 
     public record ValidationErrorResponse(List<FieldError> errors) {
