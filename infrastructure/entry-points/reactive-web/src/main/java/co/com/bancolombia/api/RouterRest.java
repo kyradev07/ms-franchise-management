@@ -20,6 +20,7 @@ public class RouterRest {
                         .POST("", franchiseHandler::createFranchise)
                         .PUT("/{id}", franchiseHandler::updateFranchiseName)
                         .PUT("/{franchiseId}/branch", branchHandler::addBranchToFranchise)
+                        .PUT("/{franchiseId}/branch/{branchId}", branchHandler::updateBranchName)
                 ).build();
 
     }
