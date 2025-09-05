@@ -1,5 +1,6 @@
 package co.com.bancolombia.api.validations;
 
+import co.com.bancolombia.usecase.exceptions.DuplicateBranchException;
 import co.com.bancolombia.usecase.exceptions.DuplicateFranchiseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolationException;
@@ -63,6 +64,7 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
         if (ex instanceof ConstraintViolationException) return HttpStatus.BAD_REQUEST;
         if (ex instanceof MissingRequestBodyException) return HttpStatus.BAD_REQUEST;
         if (ex instanceof DuplicateFranchiseException) return HttpStatus.CONFLICT;
+        if (ex instanceof DuplicateBranchException) return HttpStatus.CONFLICT;
         if (ex instanceof IllegalArgumentException) return HttpStatus.BAD_REQUEST;
         if (ex instanceof ResponseStatusException rse) return HttpStatus.valueOf(rse.getStatusCode().value());
         return HttpStatus.INTERNAL_SERVER_ERROR;
