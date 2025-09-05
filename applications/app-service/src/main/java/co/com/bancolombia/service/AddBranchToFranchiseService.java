@@ -27,7 +27,7 @@ public class AddBranchToFranchiseService implements AddBranchToFranchiseUseCase 
 
         return Mono.defer(() -> this.franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
-                    boolean existsBranch = Filters.filterByName(franchise, branch.getName());
+                    boolean existsBranch = Filters.filterBranchByName(franchise, branch.getName());
                     if (existsBranch) {
                         log.warn("Branch with name {} already exists in Franchise", branch.getName());
                         return Mono.error(new DuplicateBranchException(branch.getName(), franchise.getName()));
