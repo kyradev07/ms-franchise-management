@@ -1,30 +1,30 @@
 package co.com.bancolombia.api.validations;
 
+import co.com.bancolombia.usecase.exceptions.DuplicateFranchiseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @Component
-@Order(-2) // más alto que el DefaultErrorWebExceptionHandler
+@Order(-2)
 @RequiredArgsConstructor
 public class GlobalErrorHandler implements ErrorWebExceptionHandler {
 
-    private final ObjectMapper mapper; // Spring Boot ya la registra
+    private final ObjectMapper mapper;
 
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
@@ -47,7 +47,6 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
         try {
             bytes = mapper.writeValueAsBytes(body);
         } catch (Exception e) {
-            // fallback muy pequeño si falla la serialización
             bytes = ("{\"status\":" + status.value() + ",\"message\":\"" +
                     escapeJson(ex.getMessage()) + "\"}")
                     .getBytes(StandardCharsets.UTF_8);
@@ -61,11 +60,11 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
     }
 
     private HttpStatus toStatus(Throwable ex) {
-        if (ex instanceof ConstraintViolationException)       return HttpStatus.BAD_REQUEST;
-        if (ex instanceof MissingRequestBodyException)        return HttpStatus.BAD_REQUEST;
-        if (ex instanceof DuplicateFranchiseException)        return HttpStatus.CONFLICT;
-        if (ex instanceof IllegalArgumentException)           return HttpStatus.BAD_REQUEST;
-        if (ex instanceof ResponseStatusException rse)        return HttpStatus.valueOf(rse.getStatusCode().value());
+        if (ex instanceof ConstraintViolationException) return HttpStatus.BAD_REQUEST;
+        if (ex instanceof MissingRequestBodyException) return HttpStatus.BAD_REQUEST;
+        if (ex instanceof DuplicateFranchiseException) return HttpStatus.CONFLICT;
+        if (ex instanceof IllegalArgumentException) return HttpStatus.BAD_REQUEST;
+        if (ex instanceof ResponseStatusException rse) return HttpStatus.valueOf(rse.getStatusCode().value());
         return HttpStatus.INTERNAL_SERVER_ERROR;
     }
 
@@ -73,7 +72,7 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
         if (ex instanceof ConstraintViolationException cve) {
             return cve.getConstraintViolations().stream()
                     .map(v -> v.getPropertyPath() + ": " + v.getMessage())
-                    .reduce((a,b) -> a + "; " + b).orElse("Validation failed");
+                    .reduce((a, b) -> a + "; " + b).orElse("Validation failed");
         }
         if (ex instanceof ResponseStatusException rse) {
             return rse.getReason() != null ? rse.getReason() : rse.getMessage();
@@ -89,12 +88,5 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
     private static String escapeJson(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
-
-    public static class MissingRequestBodyException extends RuntimeException {
-        public MissingRequestBodyException(String msg) { super(msg); }
-    }
-    public static class DuplicateFranchiseException extends RuntimeException {
-        public DuplicateFranchiseException(String msg) { super(msg); }
     }
 }
