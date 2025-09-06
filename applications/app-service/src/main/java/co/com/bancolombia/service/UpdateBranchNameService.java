@@ -7,11 +7,11 @@ import co.com.bancolombia.usecase.exceptions.DuplicateBranchException;
 import co.com.bancolombia.usecase.in.branch.UpdateBranchNameUseCase;
 import co.com.bancolombia.utils.Filters;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-@Component
+@Service
 public class UpdateBranchNameService implements UpdateBranchNameUseCase {
 
     private final FranchiseRepositoryPort franchiseRepositoryPort;
