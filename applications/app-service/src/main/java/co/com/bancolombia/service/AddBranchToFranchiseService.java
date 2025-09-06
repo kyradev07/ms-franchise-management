@@ -34,7 +34,7 @@ public class AddBranchToFranchiseService implements AddBranchToFranchiseUseCase 
                     }
                     branch.setId(UUID.randomUUID().toString());
                     franchise.getBranches().add(branch);
-                    return this.franchiseRepositoryPort.addBranch(franchise)
+                    return this.franchiseRepositoryPort.save(franchise)
                             .map(fr -> Filters.findBranch(franchise, branch))
                             .doOnSuccess(f -> log.info("Branch added successfully!"))
                             .doOnError(error -> log.error("Error while adding Branch {}", error.getMessage()));
