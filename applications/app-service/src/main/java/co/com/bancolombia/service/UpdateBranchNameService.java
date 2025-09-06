@@ -27,17 +27,14 @@ public class UpdateBranchNameService implements UpdateBranchNameUseCase {
         return Mono.defer(() -> this.franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
 
-                    Branch branchDb = franchise.getBranches()
-                            .stream()
-                            .filter(br -> br.getId().equals(branch.getId()))
-                            .findFirst().orElse(null);
+                    Branch branchDb = Filters.filterBranchById(franchise, branch.getId());
 
                     if (branchDb == null) {
                         log.warn("Branch with id {} does not exists in Franchise {}", branch.getId(), franchise.getName());
                         return Mono.error(new BranchNotFoundException(branch.getId()));
                     }
 
-                    boolean existName = Filters.filterByName(franchise, branch.getName());
+                    boolean existName = Filters.filterBranchByName(franchise, branch.getName());
 
                     if (existName) {
                         log.warn("Branch with name {} already exists in Franchise", branch.getName());
