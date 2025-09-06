@@ -63,12 +63,4 @@ public class FranchiseRepositoryAdapter implements FranchiseRepositoryPort {
                 .map(FranchiseMapper::toDomain)
                 .doOnSuccess(f -> log.info("Franchise {} was updated.", f.getName()));
     }
-
-    @Override
-    public Mono<Franchise> addBranch(Franchise franchise) {
-        return this.franchiseMongoRepository
-                .save(FranchiseMapper.toDocument(franchise))
-                .map(FranchiseMapper::toDomain)
-                .doOnSuccess(f -> log.info("Franchise {} was updated.", f.getName()));
-    }
 }
