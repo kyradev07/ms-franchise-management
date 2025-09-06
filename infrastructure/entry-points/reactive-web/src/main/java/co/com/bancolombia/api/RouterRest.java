@@ -27,6 +27,7 @@ public class RouterRest {
                         .POST("/{franchiseId}/branch", branchHandler::addBranchToFranchise)
                         .PUT("/{franchiseId}/branch/{branchId}", branchHandler::updateBranchName)
                         .POST("/{franchiseId}/branch/{branchId}/product", productHandler::addProductToBranch)
+                        .GET("/{franchiseId}", productHandler::getMaxStock)
                 ).build();
 
     }
