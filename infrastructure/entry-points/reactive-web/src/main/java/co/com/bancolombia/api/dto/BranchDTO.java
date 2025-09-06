@@ -19,6 +19,6 @@ public class BranchDTO {
     @NotBlank(message = "Branch must not be blank")
     private String name;
 
-    private List<ProductDTO>  productStocksStockDTOS;
+    private List<ProductDTO>  products;
 
 }
