@@ -1,5 +1,6 @@
 package co.com.bancolombia.api.validations;
 
+import co.com.bancolombia.usecase.exceptions.BranchNotFoundException;
 import co.com.bancolombia.usecase.exceptions.DuplicateBranchException;
 import co.com.bancolombia.usecase.exceptions.DuplicateFranchiseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,6 +64,7 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
     private HttpStatus toStatus(Throwable ex) {
         if (ex instanceof ConstraintViolationException) return HttpStatus.BAD_REQUEST;
         if (ex instanceof MissingRequestBodyException) return HttpStatus.BAD_REQUEST;
+        if (ex instanceof BranchNotFoundException) return HttpStatus.NOT_FOUND;
         if (ex instanceof DuplicateFranchiseException) return HttpStatus.CONFLICT;
         if (ex instanceof DuplicateBranchException) return HttpStatus.CONFLICT;
         if (ex instanceof IllegalArgumentException) return HttpStatus.BAD_REQUEST;
