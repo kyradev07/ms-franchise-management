@@ -27,7 +27,7 @@ public class AddProductToBranchService implements AddProductToBranchUseCase {
     public Mono<Product> addProductToBranch(String franchiseId, String branchId, Product product) {
         log.info("Adding Product to Branch {} to branch {}", product.getName(), branchId);
 
-        return this.franchiseRepositoryPort.findById(franchiseId)
+        return Mono.defer(() -> this.franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
 
                     Branch branch = Filters.filterBranchById(franchise, branchId);
@@ -52,6 +52,6 @@ public class AddProductToBranchService implements AddProductToBranchUseCase {
                             .doOnSuccess(f -> log.info("Product added successfully!"))
                             .doOnError(error -> log.error("Error while adding Product {}", error.getMessage()));
 
-                });
+                }));
     }
 }
