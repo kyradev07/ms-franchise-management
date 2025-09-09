@@ -25,13 +25,11 @@ public class UpdateFranchiseNameService implements UpdateFranchiseNameUseCase {
 
         return this.franchiseRepositoryPort.findById(franchiseId)
                 .switchIfEmpty(Mono.error(new FranchiseNotFoundException(franchiseId)))
-                .map(franchiseDB -> {
-                    franchiseDB.setName(franchise.getName());
-                    return franchiseDB;
-                })
-                .flatMap(this.franchiseRepositoryPort::save)
+                .doOnNext(franchiseDb -> franchiseDb.setName(franchise.getName()))
+                .flatMap(franchiseDB -> this.franchiseRepositoryPort.save(franchiseDB)
+                        .onErrorResume(e -> Mono.error(new DuplicateFranchiseException(franchise.getName())))
+                )
                 .doOnSuccess(updatedF -> log.info("Franchise {} created successfully!", updatedF.getName()))
-                .doOnError(error -> log.error("Error while updating Franchise {}", error.getMessage()))
-                .onErrorResume(e -> Mono.error(new DuplicateFranchiseException(franchise.getName())));
+                .doOnError(error -> log.error("Error while updating Franchise {}", error.getMessage()));
     }
 }
