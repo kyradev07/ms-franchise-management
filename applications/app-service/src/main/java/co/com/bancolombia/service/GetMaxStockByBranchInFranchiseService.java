@@ -1,5 +1,6 @@
 package co.com.bancolombia.service;
 
+import co.com.bancolombia.model.Branch;
 import co.com.bancolombia.model.Franchise;
 import co.com.bancolombia.model.Product;
 import co.com.bancolombia.model.gateway.FranchiseRepositoryPort;
@@ -25,16 +26,20 @@ public class GetMaxStockByBranchInFranchiseService implements GetMaxStockByBranc
     public Mono<Franchise> getMaxStockByBranchInFranchise(String franchiseId) {
         log.info("Calculating Products with max stock");
 
-        return Mono.defer(() -> this.franchiseRepositoryPort.findById(franchiseId)
-                .doOnNext(franchise -> franchise.getBranches()
-                        .forEach(branch -> {
-                            List<Product> product = branch.getProducts()
+        return this.franchiseRepositoryPort.findById(franchiseId)
+                .map(franchise -> {
+                            List<Branch> branches = franchise.getBranches()
                                     .stream()
-                                    .max(Comparator.comparingInt(Product::getStock))
-                                    .stream().toList();
-                            branch.setProducts(product);
-                        })
-                )
-        );
+                                    .map(branch -> {
+                                        List<Product> product = branch.getProducts()
+                                                .stream()
+                                                .max(Comparator.comparingInt(Product::getStock))
+                                                .map(List::of).orElse(List.of());
+                                        return new Branch(branch.getId(), branch.getName(), product);
+                                    })
+                                    .toList();
+                            return new Franchise(franchise.getId(), franchise.getName(), branches);
+                        }
+                );
     }
 }
