@@ -30,7 +30,7 @@ public class AddProductToBranchService implements AddProductToBranchUseCase {
         return this.franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
 
-                    Branch branch = Filters.filterBranchById(franchise, branchId);
+                    Branch branch = Filters.findBranchById(franchise, branchId);
 
                     if (branch == null) {
                         log.warn("Branch with id {} does not exists in Franchise {}", branchId, franchise.getName());
