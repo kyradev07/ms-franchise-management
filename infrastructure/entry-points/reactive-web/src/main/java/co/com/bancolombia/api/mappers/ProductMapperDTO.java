@@ -9,7 +9,8 @@ public class ProductMapperDTO {
     public static Product toDomain(ProductDTO productDTO) {
         log.debug("Converting ProductDTO to ProductModel");
 
-        return new Product(null, productDTO.getName(), productDTO.getStock());
+        Integer INITIAL_STOCK = 0;
+        return new Product(productDTO.getProductId(), productDTO.getName(), INITIAL_STOCK);
     }
 
     public static ProductDTO toDTO(Product product) {
