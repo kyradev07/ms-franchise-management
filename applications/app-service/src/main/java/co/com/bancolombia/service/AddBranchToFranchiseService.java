@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
 import java.util.UUID;
 
 @Slf4j
@@ -33,11 +32,11 @@ public class AddBranchToFranchiseService implements AddBranchToFranchiseUseCase 
                         return Mono.error(new DuplicateBranchException(branch.getName(), franchise.getName()));
                     }
 
-                    Branch newBranch = new Branch(UUID.randomUUID().toString(), branch.getName(), new ArrayList<>());
-                    franchise.getBranches().add(newBranch);
+                    branch.setId(UUID.randomUUID().toString());
+                    franchise.getBranches().add(branch);
 
                     return this.franchiseRepositoryPort.save(franchise)
-                            .thenReturn(newBranch);
+                            .thenReturn(branch);
                 })
                 .doOnSuccess(f -> log.info("Branch added successfully!"))
                 .doOnError(error -> log.error("Error while adding Branch {}", error.getMessage()));
