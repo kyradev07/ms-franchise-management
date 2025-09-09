@@ -17,7 +17,7 @@ public class BranchMapperDTO {
 
         List<Product> productDTOS = new ArrayList<>();
 
-        return new Branch(null, branchDTO.getName().trim().toLowerCase(), productDTOS);
+        return new Branch(branchDTO.getId(), branchDTO.getName().trim().toLowerCase(), productDTOS);
 
     }
 

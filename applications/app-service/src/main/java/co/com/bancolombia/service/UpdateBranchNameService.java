@@ -24,7 +24,7 @@ public class UpdateBranchNameService implements UpdateBranchNameUseCase {
     public Mono<Branch> updateName(String franchiseId, Branch branch) {
         log.info("Updating Branch Name {}", branch.getName());
 
-        return Mono.defer(() -> this.franchiseRepositoryPort.findById(franchiseId)
+        return this.franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
 
                     Branch branchDb = Filters.filterBranchById(franchise, branch.getId());
@@ -34,9 +34,7 @@ public class UpdateBranchNameService implements UpdateBranchNameUseCase {
                         return Mono.error(new BranchNotFoundException(branch.getId()));
                     }
 
-                    boolean existName = Filters.filterBranchByName(franchise, branch.getName());
-
-                    if (existName) {
+                    if (Filters.existsBranchByName(franchise, branch.getName())) {
                         log.warn("Branch with name {} already exists in Franchise", branch.getName());
                         return Mono.error(new DuplicateBranchException(branch.getName(), franchise.getName()));
                     }
@@ -44,11 +42,9 @@ public class UpdateBranchNameService implements UpdateBranchNameUseCase {
                     branchDb.setName(branch.getName());
 
                     return this.franchiseRepositoryPort.save(franchise)
-                            .map(fr -> Filters.findBranch(franchise, branch))
-                            .doOnSuccess(updatedF -> log.info("Branch name {} was updated successfully!", updatedF.getName()))
-                            .doOnError(error -> log.error("Error while updating Branch name {}", error.getMessage()));
+                            .thenReturn(branchDb);
                 })
-
-        );
+                .doOnSuccess(updatedF -> log.info("Branch name {} was updated successfully!", updatedF.getName()))
+                .doOnError(error -> log.error("Error while updating Branch name {}", error.getMessage()));
     }
 }
