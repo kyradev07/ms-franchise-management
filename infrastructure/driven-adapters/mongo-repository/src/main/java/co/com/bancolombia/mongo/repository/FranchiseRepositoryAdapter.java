@@ -35,17 +35,17 @@ public class FranchiseRepositoryAdapter implements FranchiseRepositoryPort {
                 .map(FranchiseMapper::toDomain);
     }
 
-        @Override
-        public Mono<Franchise> findByName (String name){
-            log.info("Find Franchise by name {}", name);
-            return this.franchiseMongoRepository
-                    .findByName(name)
-                    .map(FranchiseMapper::toDomain);
-        }
-
-        @Override
-        public Flux<Franchise> findAll () {
-            return null;
-        }
-
+    @Override
+    public Mono<Franchise> findByName(String name) {
+        log.info("Find Franchise by name {}", name);
+        return this.franchiseMongoRepository
+                .findByName(name)
+                .map(FranchiseMapper::toDomain);
     }
+
+    @Override
+    public Flux<Franchise> findAll() {
+        return null;
+    }
+
+}
