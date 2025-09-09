@@ -1,9 +1,6 @@
 package co.com.bancolombia.api.validations;
 
-import co.com.bancolombia.usecase.exceptions.BranchNotFoundException;
-import co.com.bancolombia.usecase.exceptions.DuplicateBranchException;
-import co.com.bancolombia.usecase.exceptions.DuplicateFranchiseException;
-import co.com.bancolombia.usecase.exceptions.ProductNotFoundException;
+import co.com.bancolombia.usecase.exceptions.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +62,7 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
     private HttpStatus toStatus(Throwable ex) {
         if (ex instanceof ConstraintViolationException) return HttpStatus.BAD_REQUEST;
         if (ex instanceof MissingRequestBodyException) return HttpStatus.BAD_REQUEST;
+        if (ex instanceof FranchiseNotFoundException) return HttpStatus.NOT_FOUND;
         if (ex instanceof BranchNotFoundException) return HttpStatus.NOT_FOUND;
         if (ex instanceof ProductNotFoundException) return HttpStatus.NOT_FOUND;
         if (ex instanceof DuplicateFranchiseException) return HttpStatus.CONFLICT;
