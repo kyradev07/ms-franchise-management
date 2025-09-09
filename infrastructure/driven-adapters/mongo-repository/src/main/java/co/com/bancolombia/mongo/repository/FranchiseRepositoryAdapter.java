@@ -31,7 +31,7 @@ public class FranchiseRepositoryAdapter implements FranchiseRepositoryPort {
         log.info("Find Franchise by id {}", id);
         return this.franchiseMongoRepository
                 .findById(id)
-                .switchIfEmpty(Mono.empty())
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Franchise with id <" + id + "> not found!")))
                 .map(FranchiseMapper::toDomain);
     }
 
