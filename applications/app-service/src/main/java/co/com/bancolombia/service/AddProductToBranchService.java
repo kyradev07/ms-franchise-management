@@ -6,7 +6,6 @@ import co.com.bancolombia.model.gateway.FranchiseRepositoryPort;
 import co.com.bancolombia.usecase.exceptions.BranchNotFoundException;
 import co.com.bancolombia.usecase.exceptions.DuplicateProductException;
 import co.com.bancolombia.usecase.in.product.AddProductToBranchUseCase;
-import co.com.bancolombia.utils.Filters;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -30,14 +29,14 @@ public class AddProductToBranchService implements AddProductToBranchUseCase {
         return this.franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
 
-                    Branch branch = Filters.findBranchById(franchise, branchId);
+                    Branch branch = franchise.findBranchById(branchId);
 
                     if (branch == null) {
                         log.warn("Branch with id {} does not exists in Franchise {}", branchId, franchise.getName());
                         return Mono.error(new BranchNotFoundException(branchId));
                     }
 
-                    if (Filters.existsProductByName(branch, product.getName())) {
+                    if (branch.existsProductByName(branch, product.getName())) {
                         log.warn("Product with name {} already exists in Branch", product.getName());
                         return Mono.error(new DuplicateProductException(product.getName(), branch.getName()));
                     }

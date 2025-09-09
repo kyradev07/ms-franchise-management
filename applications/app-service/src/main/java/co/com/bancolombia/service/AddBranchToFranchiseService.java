@@ -4,7 +4,6 @@ import co.com.bancolombia.model.Branch;
 import co.com.bancolombia.model.gateway.FranchiseRepositoryPort;
 import co.com.bancolombia.usecase.exceptions.DuplicateBranchException;
 import co.com.bancolombia.usecase.in.branch.AddBranchToFranchiseUseCase;
-import co.com.bancolombia.utils.Filters;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -27,7 +26,7 @@ public class AddBranchToFranchiseService implements AddBranchToFranchiseUseCase 
 
         return this.franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
-                    if (Filters.existsBranchByName(franchise, branch.getName())) {
+                    if (franchise.existsBranchByName(branch.getName())) {
                         log.warn("Branch with name {} already exists in Franchise", branch.getName());
                         return Mono.error(new DuplicateBranchException(branch.getName(), franchise.getName()));
                     }

@@ -5,7 +5,6 @@ import co.com.bancolombia.model.gateway.FranchiseRepositoryPort;
 import co.com.bancolombia.usecase.exceptions.BranchNotFoundException;
 import co.com.bancolombia.usecase.exceptions.ProductNotFoundException;
 import co.com.bancolombia.usecase.in.product.DeleteProductFromBranchUseCase;
-import co.com.bancolombia.utils.Filters;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -26,7 +25,7 @@ public class DeleteProductFromBranchService implements DeleteProductFromBranchUs
 
         return this.franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
-                    Branch branch = Filters.filterBranchById(franchise, branchId);
+                    Branch branch = franchise.findBranchById(branchId);
 
                     if (branch == null) {
                         log.warn("Branch with id {} does not exists in Franchise {}", branchId, franchise.getName());

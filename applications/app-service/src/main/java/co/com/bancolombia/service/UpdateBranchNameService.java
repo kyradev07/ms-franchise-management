@@ -5,7 +5,6 @@ import co.com.bancolombia.model.gateway.FranchiseRepositoryPort;
 import co.com.bancolombia.usecase.exceptions.BranchNotFoundException;
 import co.com.bancolombia.usecase.exceptions.DuplicateBranchException;
 import co.com.bancolombia.usecase.in.branch.UpdateBranchNameUseCase;
-import co.com.bancolombia.utils.Filters;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -27,14 +26,14 @@ public class UpdateBranchNameService implements UpdateBranchNameUseCase {
         return this.franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
 
-                    Branch branchDb = Filters.filterBranchById(franchise, branch.getId());
+                    Branch branchDb = franchise.findBranchById(branch.getId());
 
                     if (branchDb == null) {
                         log.warn("Branch with id {} does not exists in Franchise {}", branch.getId(), franchise.getName());
                         return Mono.error(new BranchNotFoundException(branch.getId()));
                     }
 
-                    if (Filters.existsBranchByName(franchise, branch.getName())) {
+                    if (franchise.existsBranchByName(branch.getName())) {
                         log.warn("Branch with name {} already exists in Franchise", branch.getName());
                         return Mono.error(new DuplicateBranchException(branch.getName(), franchise.getName()));
                     }
