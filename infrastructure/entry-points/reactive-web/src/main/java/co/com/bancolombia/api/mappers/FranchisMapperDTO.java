@@ -16,10 +16,10 @@ public class FranchisMapperDTO {
 
         List<Branch> branches = new ArrayList<>();
 
-        return new Franchise(null, franchiseDTO.getName().trim().toLowerCase(), branches);
+        return new Franchise(franchiseDTO.getId(), franchiseDTO.getName().trim().toLowerCase(), branches);
     }
 
     public static FranchiseDTO toDTO(Franchise franchise) {
-        return new FranchiseDTO(franchise.getName());
+        return new FranchiseDTO(franchise.getId(), franchise.getName());
     }
 }

@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class FranchiseDTO {
 
+    private String id;
+
     @NotNull(message = "Franchise name is required")
     @NotBlank(message = "Franchise must not be blank")
     private String name;
