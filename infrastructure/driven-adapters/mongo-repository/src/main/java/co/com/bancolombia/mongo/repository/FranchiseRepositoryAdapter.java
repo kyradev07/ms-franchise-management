@@ -14,7 +14,6 @@ import reactor.core.publisher.Mono;
 public class FranchiseRepositoryAdapter implements FranchiseRepositoryPort {
 
     private final FranchiseMongoRepository franchiseMongoRepository;
-    private final String message = "Franchise not found {}";
 
     public FranchiseRepositoryAdapter(FranchiseMongoRepository franchiseMongoRepository) {
         this.franchiseMongoRepository = franchiseMongoRepository;
@@ -24,8 +23,7 @@ public class FranchiseRepositoryAdapter implements FranchiseRepositoryPort {
     public Mono<Franchise> save(Franchise franchise) {
         return this.franchiseMongoRepository
                 .save(FranchiseMapper.toDocument(franchise))
-                .map(FranchiseMapper::toDomain)
-                .doOnSuccess(f -> log.info("Franchise {} was save success.", f.getName()));
+                .map(FranchiseMapper::toDomain);
     }
 
     @Override
@@ -33,34 +31,21 @@ public class FranchiseRepositoryAdapter implements FranchiseRepositoryPort {
         log.info("Find Franchise by id {}", id);
         return this.franchiseMongoRepository
                 .findById(id)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Franchise not found")))
-                .map(FranchiseMapper::toDomain)
-                .doOnError(f -> log.info(message, id));
+                .switchIfEmpty(Mono.empty())
+                .map(FranchiseMapper::toDomain);
     }
 
-    @Override
-    public Mono<Franchise> findByName(String name) {
-        log.info("Find Franchise by name {}", name);
-        return this.franchiseMongoRepository
-                .findByName(name)
-                .map(FranchiseMapper::toDomain)
-                .doOnError(f -> log.info(message, name));
-    }
+        @Override
+        public Mono<Franchise> findByName (String name){
+            log.info("Find Franchise by name {}", name);
+            return this.franchiseMongoRepository
+                    .findByName(name)
+                    .map(FranchiseMapper::toDomain);
+        }
 
-    @Override
-    public Flux<Franchise> findAll() {
-        return null;
-    }
+        @Override
+        public Flux<Franchise> findAll () {
+            return null;
+        }
 
-    @Override
-    public Mono<Franchise> updateFranchiseName(String id, String name) {
-        return this.franchiseMongoRepository.findById(id)
-                .map(doc -> {
-                    doc.setName(name);
-                    return doc;
-                })
-                .flatMap(this.franchiseMongoRepository::save)
-                .map(FranchiseMapper::toDomain)
-                .doOnSuccess(f -> log.info("Franchise {} was updated.", f.getName()));
     }
-}
