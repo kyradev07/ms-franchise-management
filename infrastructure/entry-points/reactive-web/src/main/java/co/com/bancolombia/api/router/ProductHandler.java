@@ -8,6 +8,7 @@ import co.com.bancolombia.api.validations.MissingRequestBodyException;
 import co.com.bancolombia.usecase.in.product.AddProductToBranchUseCase;
 import co.com.bancolombia.usecase.in.product.DeleteProductFromBranchUseCase;
 import co.com.bancolombia.usecase.in.product.GetMaxStockByBranchInFranchiseUseCase;
+import co.com.bancolombia.usecase.in.product.UpdateProductUseCase;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -20,17 +21,20 @@ import reactor.core.publisher.Mono;
 public class ProductHandler {
     private final AddProductToBranchUseCase addProductToBranchUseCase;
     private final GetMaxStockByBranchInFranchiseUseCase getMaxStockByBranchInFranchiseUseCase;
-    private final DeleteProductFromBranchUseCase  deleteProductFromBranchUseCase;
+    private final DeleteProductFromBranchUseCase deleteProductFromBranchUseCase;
+    private final UpdateProductUseCase updateProductUseCase;
     private final FieldsValidator fieldsValidator;
 
     public ProductHandler(
             AddProductToBranchUseCase addProductToBranchUseCase,
             GetMaxStockByBranchInFranchiseUseCase getMaxStockByBranchInFranchiseUseCase,
             DeleteProductFromBranchUseCase deleteProductFromBranchUseCase,
+            UpdateProductUseCase updateProductUseCase,
             FieldsValidator fieldsValidator) {
         this.addProductToBranchUseCase = addProductToBranchUseCase;
         this.getMaxStockByBranchInFranchiseUseCase = getMaxStockByBranchInFranchiseUseCase;
         this.deleteProductFromBranchUseCase = deleteProductFromBranchUseCase;
+        this.updateProductUseCase = updateProductUseCase;
         this.fieldsValidator = fieldsValidator;
     }
 
@@ -61,6 +65,20 @@ public class ProductHandler {
 
         return this.deleteProductFromBranchUseCase.deleteProductFromBranch(franchiseId, branchId, productId)
                 .flatMap(ServerResponse.status(HttpStatus.NO_CONTENT)::bodyValue);
+    }
+
+    public Mono<ServerResponse> updateProduct(ServerRequest serverRequest) {
+        String franchiseId = serverRequest.pathVariable("franchiseId");
+        String branchId = serverRequest.pathVariable("branchId");
+        String productId = serverRequest.pathVariable("productId");
+
+        return serverRequest.bodyToMono(ProductDTO.class)
+                .switchIfEmpty(Mono.error(new MissingRequestBodyException("Body cannot be null")))
+                .map(ProductMapperDTO::toDomain)
+                .doOnNext(pr -> pr.setId(productId))
+                .flatMap(product -> this.updateProductUseCase.updateProduct(franchiseId, branchId, product))
+                .map(ProductMapperDTO::toDTO)
+                .flatMap(ServerResponse.status(HttpStatus.CREATED)::bodyValue);
     }
 
 
