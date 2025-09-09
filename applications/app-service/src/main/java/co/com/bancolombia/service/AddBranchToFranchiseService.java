@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.UUID;
 
 @Slf4j
@@ -25,20 +26,20 @@ public class AddBranchToFranchiseService implements AddBranchToFranchiseUseCase 
     public Mono<Branch> addBranchToFranchise(String franchiseId, Branch branch) {
         log.info("Adding Branch to Franchise {} with name {}", franchiseId, branch.getName());
 
-        return Mono.defer(() -> this.franchiseRepositoryPort.findById(franchiseId)
+        return this.franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
-                    boolean existsBranch = Filters.filterBranchByName(franchise, branch.getName());
-                    if (existsBranch) {
+                    if (Filters.existsBranchByName(franchise, branch.getName())) {
                         log.warn("Branch with name {} already exists in Franchise", branch.getName());
                         return Mono.error(new DuplicateBranchException(branch.getName(), franchise.getName()));
                     }
-                    branch.setId(UUID.randomUUID().toString());
-                    franchise.getBranches().add(branch);
+
+                    Branch newBranch = new Branch(UUID.randomUUID().toString(), branch.getName(), new ArrayList<>());
+                    franchise.getBranches().add(newBranch);
+
                     return this.franchiseRepositoryPort.save(franchise)
-                            .map(fr -> Filters.findBranch(franchise, branch))
-                            .doOnSuccess(f -> log.info("Branch added successfully!"))
-                            .doOnError(error -> log.error("Error while adding Branch {}", error.getMessage()));
+                            .thenReturn(newBranch);
                 })
-        );
+                .doOnSuccess(f -> log.info("Branch added successfully!"))
+                .doOnError(error -> log.error("Error while adding Branch {}", error.getMessage()));
     }
 }
