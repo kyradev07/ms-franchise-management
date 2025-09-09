@@ -2,8 +2,8 @@ package co.com.bancolombia.api.router;
 
 import co.com.bancolombia.api.dto.FranchiseDTO;
 import co.com.bancolombia.api.mappers.FranchisMapperDTO;
-import co.com.bancolombia.api.validations.MissingRequestBodyException;
 import co.com.bancolombia.api.validations.FieldsValidator;
+import co.com.bancolombia.api.validations.MissingRequestBodyException;
 import co.com.bancolombia.usecase.in.franchise.CreateFranchiseUseCase;
 import co.com.bancolombia.usecase.in.franchise.UpdateFranchiseNameUseCase;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +46,7 @@ public class FranchiseHandler {
                 .switchIfEmpty(Mono.error(new MissingRequestBodyException("Body cannot be null")))
                 .map(fieldsValidator::validate)
                 .map(FranchisMapperDTO::toDomain)
-                .flatMap(franchise -> this.updateFranchiseNameUseCase.updateName(id, franchise.getName()))
+                .flatMap(franchise -> this.updateFranchiseNameUseCase.updateName(id, franchise))
                 .map(FranchisMapperDTO::toDTO)
                 .flatMap(ServerResponse.status(HttpStatus.CREATED)::bodyValue);
     }
