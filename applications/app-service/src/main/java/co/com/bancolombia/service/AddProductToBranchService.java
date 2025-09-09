@@ -27,7 +27,7 @@ public class AddProductToBranchService implements AddProductToBranchUseCase {
     public Mono<Product> addProductToBranch(String franchiseId, String branchId, Product product) {
         log.info("Adding Product to Branch {} to branch {}", product.getName(), branchId);
 
-        return Mono.defer(() -> this.franchiseRepositoryPort.findById(franchiseId)
+        return this.franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
 
                     Branch branch = Filters.filterBranchById(franchise, branchId);
@@ -37,9 +37,7 @@ public class AddProductToBranchService implements AddProductToBranchUseCase {
                         return Mono.error(new BranchNotFoundException(branchId));
                     }
 
-                    boolean existName = Filters.filterProductByName(branch, product.getName());
-
-                    if (existName) {
+                    if (Filters.existsProductByName(branch, product.getName())) {
                         log.warn("Product with name {} already exists in Branch", product.getName());
                         return Mono.error(new DuplicateProductException(product.getName(), branch.getName()));
                     }
@@ -48,10 +46,12 @@ public class AddProductToBranchService implements AddProductToBranchUseCase {
                     branch.getProducts().add(product);
 
                     return this.franchiseRepositoryPort.save(franchise)
-                            .map(fr -> Filters.findProduct(fr, branchId, product.getId()))
-                            .doOnSuccess(f -> log.info("Product added successfully!"))
-                            .doOnError(error -> log.error("Error while adding Product {}", error.getMessage()));
+                            .thenReturn(product);
 
-                }));
+                })
+                .doOnSuccess(f -> log.info("Product added successfully!"))
+                .doOnError(error -> log.error("Error while adding Product {}", error.getMessage())
+        );
+
     }
 }
