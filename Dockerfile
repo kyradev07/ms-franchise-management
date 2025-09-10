@@ -1,4 +1,4 @@
-FROM openjdk:21-jdk-slim
+FROM eclipse-temurin:21-jdk-alpine
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ RUN chmod +x gradlew
 
 RUN ./gradlew bootJar --no-daemon
 
-FROM openjdk:21-jre-slim
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
