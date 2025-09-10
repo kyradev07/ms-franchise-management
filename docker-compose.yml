@@ -1,27 +1,50 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  mongo:
-    image: mongo:7
-    container_name: mongo-local
+  mongodb:
+    image: mongo:7.0
+    container_name: franchise-mongodb
+    restart: always
     ports:
-      - "27017:27017"          # expone Mongo a tu host en 27017
+      - "27017:27017"
     environment:
-      MONGO_INITDB_DATABASE: test
-      # Si NO quieres usuarios, deja así y tendrás acceso sin auth
-      # Si quieres usuarios, descomenta las 3 líneas de abajo y ajusta la URI en el paso 2
-      # MONGO_INITDB_ROOT_USERNAME: root
-      # MONGO_INITDB_ROOT_PASSWORD: secret
-      # MONGO_INITDB_DATABASE: test
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: franchise_db
     volumes:
-      - mongo_data:/data/db
-    restart: unless-stopped
-    # opcional: healthcheck simple
+      - mongodb_data:/data/db
+    networks:
+      - franchise-network
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  franchise-app:
+    build: .
+    container_name: franchise-management-app
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_MONGODB_URI: mongodb://root:password@mongodb:27017/franchise_db?authSource=admin
+      SERVER_PORT: 8080
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - franchise-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
-  mongo_data:
+  mongodb_data:
+
+networks:
+  franchise-network:
+    driver: bridge
