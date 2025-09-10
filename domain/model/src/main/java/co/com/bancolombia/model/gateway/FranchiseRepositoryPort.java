@@ -7,6 +7,4 @@ import reactor.core.publisher.Mono;
 public interface FranchiseRepositoryPort {
     Mono<Franchise> save(Franchise franchise);
     Mono<Franchise> findById(String id);
-    Mono<Franchise> findByName(String name);
-    Flux<Franchise> findAll();
 }

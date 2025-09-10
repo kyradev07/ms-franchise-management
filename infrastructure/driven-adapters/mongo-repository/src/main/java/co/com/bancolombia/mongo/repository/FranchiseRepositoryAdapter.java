@@ -6,7 +6,6 @@ import co.com.bancolombia.mongo.FranchiseMongoRepository;
 import co.com.bancolombia.mongo.mappers.FranchiseMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -33,19 +32,6 @@ public class FranchiseRepositoryAdapter implements FranchiseRepositoryPort {
                 .findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Franchise with id <" + id + "> not found!")))
                 .map(FranchiseMapper::toDomain);
-    }
-
-    @Override
-    public Mono<Franchise> findByName(String name) {
-        log.info("Find Franchise by name {}", name);
-        return this.franchiseMongoRepository
-                .findByName(name)
-                .map(FranchiseMapper::toDomain);
-    }
-
-    @Override
-    public Flux<Franchise> findAll() {
-        return null;
     }
 
 }
