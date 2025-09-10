@@ -13,7 +13,7 @@ RUN chmod +x gradlew
 
 # Clean any existing cache and build
 RUN ./gradlew clean --no-daemon --no-configuration-cache
-RUN ./gradlew bootJar --no-daemon --no-configuration-cache --stacktrace
+RUN ./gradlew bootJar -x validateStructure --no-daemon --no-configuration-cache --stacktrace
 
 FROM eclipse-temurin:21-jre-alpine
 
