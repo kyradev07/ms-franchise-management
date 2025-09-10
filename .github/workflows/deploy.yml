@@ -128,6 +128,15 @@ jobs:
       working-directory: ./terraform
       run: terraform validate
 
+    - name: Clean up service-linked roles from state
+      working-directory: ./terraform
+      run: |
+        # Remove service-linked roles from Terraform state (they already exist in AWS)
+        terraform state rm aws_iam_service_linked_role.ecs || true
+        terraform state rm aws_iam_service_linked_role.ecs_application_autoscaling || true
+        terraform state rm aws_iam_service_linked_role.elasticloadbalancing || true
+        echo "Service-linked roles removed from state"
+
     - name: Terraform Plan
       working-directory: ./terraform
       run: |
