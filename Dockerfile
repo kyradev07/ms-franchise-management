@@ -3,33 +3,17 @@ FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /app
 
 # Install bash and other dependencies for Gradle
-RUN apk add --no-cache bash
+RUN apk add --no-cache bash curl
 
-# Copy Gradle configuration files
-COPY gradle/ gradle/
-COPY gradlew .
-COPY build.gradle .
-COPY settings.gradle .
-COPY main.gradle .
-COPY gradle.properties .
-
-# Copy all source code and build files
-COPY domain/ domain/
-COPY infrastructure/ infrastructure/
-COPY applications/ applications/
-
-# Ensure all build.gradle files are present
-COPY domain/model/build.gradle domain/model/
-COPY domain/usecase/build.gradle domain/usecase/
-COPY applications/app-service/build.gradle applications/app-service/
-COPY infrastructure/entry-points/reactive-web/build.gradle infrastructure/entry-points/reactive-web/
-COPY infrastructure/driven-adapters/mongo-repository/build.gradle infrastructure/driven-adapters/mongo-repository/
+# Copy entire project structure
+COPY . .
 
 # Make gradlew executable
 RUN chmod +x gradlew
 
-# Build the application
-RUN ./gradlew bootJar --no-daemon --stacktrace
+# Clean any existing cache and build
+RUN ./gradlew clean --no-daemon --no-configuration-cache
+RUN ./gradlew bootJar --no-daemon --no-configuration-cache --stacktrace
 
 FROM eclipse-temurin:21-jre-alpine
 
