@@ -10,6 +10,7 @@ COPY gradlew .
 COPY build.gradle .
 COPY settings.gradle .
 COPY main.gradle .
+COPY gradle.properties .
 
 COPY domain/ domain/
 COPY infrastructure/ infrastructure/
