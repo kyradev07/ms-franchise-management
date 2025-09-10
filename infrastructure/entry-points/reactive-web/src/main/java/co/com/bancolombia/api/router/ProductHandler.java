@@ -64,7 +64,7 @@ public class ProductHandler {
         String productId = serverRequest.pathVariable("productId");
 
         return this.deleteProductFromBranchUseCase.deleteProductFromBranch(franchiseId, branchId, productId)
-                .flatMap(ServerResponse.status(HttpStatus.NO_CONTENT)::bodyValue);
+                .then(ServerResponse.status(HttpStatus.NO_CONTENT).build());
     }
 
     public Mono<ServerResponse> updateProduct(ServerRequest serverRequest) {
