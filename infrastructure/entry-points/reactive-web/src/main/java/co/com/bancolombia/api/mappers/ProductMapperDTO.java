@@ -11,7 +11,7 @@ public class ProductMapperDTO {
         log.debug("Converting ProductDTO to ProductModel");
 
         if ((productDTO.getName() == null || productDTO.getName().isBlank()) && (productDTO.getStock() == null || productDTO.getStock() < 0)) {
-            throw new MissingRequestBodyException("Product name and stock cannot be null, empty or negative number");
+            throw new MissingRequestBodyException("Product Name and Stock cannot be null, empty or negative number");
         }
 
         return new Product(productDTO.getProductId(), productDTO.getName(), productDTO.getStock());
