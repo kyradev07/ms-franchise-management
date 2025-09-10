@@ -5,6 +5,7 @@ WORKDIR /app
 # Install bash and other dependencies for Gradle
 RUN apk add --no-cache bash
 
+# Copy Gradle configuration files
 COPY gradle/ gradle/
 COPY gradlew .
 COPY build.gradle .
@@ -12,9 +13,17 @@ COPY settings.gradle .
 COPY main.gradle .
 COPY gradle.properties .
 
+# Copy all source code and build files
 COPY domain/ domain/
 COPY infrastructure/ infrastructure/
 COPY applications/ applications/
+
+# Ensure all build.gradle files are present
+COPY domain/model/build.gradle domain/model/
+COPY domain/usecase/build.gradle domain/usecase/
+COPY applications/app-service/build.gradle applications/app-service/
+COPY infrastructure/entry-points/reactive-web/build.gradle infrastructure/entry-points/reactive-web/
+COPY infrastructure/driven-adapters/mongo-repository/build.gradle infrastructure/driven-adapters/mongo-repository/
 
 # Make gradlew executable
 RUN chmod +x gradlew
