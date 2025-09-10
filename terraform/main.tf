@@ -67,6 +67,43 @@ resource "aws_subnet" "public" {
   }
 }
 
+# Private Subnets
+resource "aws_subnet" "private" {
+  count = 2
+
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.${count.index + 10}.0/24"
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+
+  tags = {
+    Name = "${var.project_name}-private-subnet-${count.index + 1}"
+    Type = "Private"
+  }
+}
+
+# NAT Gateway
+resource "aws_eip" "nat" {
+  count  = 2
+  domain = "vpc"
+
+  tags = {
+    Name = "${var.project_name}-nat-eip-${count.index + 1}"
+  }
+}
+
+resource "aws_nat_gateway" "main" {
+  count = 2
+
+  allocation_id = aws_eip.nat[count.index].id
+  subnet_id     = aws_subnet.public[count.index].id
+
+  tags = {
+    Name = "${var.project_name}-nat-gateway-${count.index + 1}"
+  }
+
+  depends_on = [aws_internet_gateway.main]
+}
+
 # Route Table
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
@@ -81,12 +118,35 @@ resource "aws_route_table" "public" {
   }
 }
 
+# Private Route Tables
+resource "aws_route_table" "private" {
+  count = 2
+
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main[count.index].id
+  }
+
+  tags = {
+    Name = "${var.project_name}-private-rt-${count.index + 1}"
+  }
+}
+
 # Route Table Associations
 resource "aws_route_table_association" "public" {
   count = length(aws_subnet.public)
 
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "private" {
+  count = length(aws_subnet.private)
+
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private[count.index].id
 }
 
 # Security Groups
@@ -411,21 +471,19 @@ resource "aws_service_discovery_service" "mongodb" {
 
     routing_policy = "MULTIVALUE"
   }
-
-  health_check_grace_period_seconds = 30
   
   tags = {
     Name = "${var.project_name}-mongodb-discovery"
   }
 }
 
-# MongoDB Task Definition
-resource "aws_ecs_task_definition" "mongodb" {
-  family                   = "${var.project_name}-mongodb"
+# Combined Task Definition (App + MongoDB)
+resource "aws_ecs_task_definition" "app" {
+  family                   = "${var.project_name}-task"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu                      = var.mongodb_cpu
-  memory                   = var.mongodb_memory
+  cpu                      = "2048"
+  memory                   = "4096"
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([
@@ -452,13 +510,6 @@ resource "aws_ecs_task_definition" "mongodb" {
           value = var.mongodb_database
         }
       ]
-      mountPoints = [
-        {
-          sourceVolume  = "mongodb-data"
-          containerPath = "/data/db"
-          readOnly      = false
-        }
-      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -474,38 +525,8 @@ resource "aws_ecs_task_definition" "mongodb" {
         retries     = 3
         startPeriod = 60
       }
-    }
-  ])
-
-  volume {
-    name = "mongodb-data"
-
-    efs_volume_configuration {
-      file_system_id          = aws_efs_file_system.mongodb.id
-      root_directory          = "/data"
-      transit_encryption      = "ENABLED"
-      authorization_config {
-        access_point_id = aws_efs_access_point.mongodb.id
-        iam             = "ENABLED"
-      }
-    }
-  }
-
-  tags = {
-    Name = "${var.project_name}-mongodb-task"
-  }
-}
-
-# Application Task Definition
-resource "aws_ecs_task_definition" "app" {
-  family                   = "${var.project_name}-app"
-  requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = var.app_cpu
-  memory                   = var.app_memory
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-
-  container_definitions = jsonencode([
+      memory = 1536
+    },
     {
       name  = "${var.project_name}-app"
       image = "${aws_ecr_repository.app.repository_url}:latest"
@@ -522,11 +543,17 @@ resource "aws_ecs_task_definition" "app" {
         },
         {
           name  = "SPRING_DATA_MONGODB_URI"
-          value = "mongodb://${var.mongodb_username}:${var.mongodb_password}@mongodb.${var.project_name}.local:27017/${var.mongodb_database}?authSource=admin"
+          value = "mongodb://${var.mongodb_username}:${var.mongodb_password}@localhost:27017/${var.mongodb_database}?authSource=admin"
         },
         {
           name  = "SERVER_PORT"
           value = "8080"
+        }
+      ]
+      dependsOn = [
+        {
+          containerName = "mongodb"
+          condition     = "HEALTHY"
         }
       ]
       logConfiguration = {
@@ -542,13 +569,14 @@ resource "aws_ecs_task_definition" "app" {
         interval    = 30
         timeout     = 10
         retries     = 3
-        startPeriod = 60
+        startPeriod = 90
       }
+      memory = 2048
     }
   ])
 
   tags = {
-    Name = "${var.project_name}-app-task"
+    Name = "${var.project_name}-task-definition"
   }
 }
 
@@ -612,48 +640,18 @@ resource "aws_lb_listener" "app" {
   }
 }
 
-# MongoDB ECS Service
-resource "aws_ecs_service" "mongodb" {
-  name            = "${var.project_name}-mongodb-service"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.mongodb.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
-  platform_version = "1.4.0"
-
-  network_configuration {
-    security_groups  = [aws_security_group.ecs.id]
-    subnets          = aws_subnet.private[*].id
-    assign_public_ip = false
-  }
-
-  service_registries {
-    registry_arn = aws_service_discovery_service.mongodb.arn
-  }
-
-  depends_on = [
-    aws_iam_role_policy_attachment.ecs_task_execution,
-    data.aws_iam_role.ecs_service_role,
-    aws_efs_mount_target.mongodb
-  ]
-
-  tags = {
-    Name = "${var.project_name}-mongodb-service"
-  }
-}
-
-# Application ECS Service
+# ECS Service (Combined App + MongoDB)
 resource "aws_ecs_service" "app" {
-  name            = "${var.project_name}-app-service"
+  name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.app.arn
-  desired_count   = var.app_count
+  desired_count   = 1
   launch_type     = "FARGATE"
 
   network_configuration {
     security_groups  = [aws_security_group.ecs.id]
-    subnets          = aws_subnet.private[*].id
-    assign_public_ip = false
+    subnets          = aws_subnet.public[*].id
+    assign_public_ip = true
   }
 
   load_balancer {
@@ -667,12 +665,11 @@ resource "aws_ecs_service" "app" {
   depends_on = [
     aws_lb_listener.app,
     aws_iam_role_policy_attachment.ecs_task_execution,
-    data.aws_iam_role.ecs_service_role,
-    aws_ecs_service.mongodb
+    data.aws_iam_role.ecs_service_role
   ]
 
   tags = {
-    Name = "${var.project_name}-app-service"
+    Name = "${var.project_name}-service"
   }
 }
 
