@@ -1,5 +1,6 @@
 server:
   port: 8080
+
 spring:
   application:
     name: "MsFranchiseManagement"
@@ -15,6 +16,22 @@ spring:
     mongodb:
       uri: "mongodb://localhost:27017/test"
       auto-index-creation: true
+  webflux:
+    cors:
+      allowed-origins:
+        - "http://localhost:4200"
+        - "http://localhost:8080"
+      allowed-methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowed-headers:
+        - "*"
+      allow-credentials: true
+      max-age: 3600
+
 management:
   endpoints:
     web:
@@ -24,8 +41,7 @@ management:
     health:
       probes:
         enabled: true
-cors:
-  allowed-origins: "http://localhost:4200,http://localhost:8080"
+
 logging:
   level:
     org.springframework.data.repository.core.support: DEBUG
