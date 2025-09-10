@@ -36,4 +36,17 @@ public final class Branch {
     public void setProducts(List<Product> products) {
         this.products = products;
     }
+
+    public boolean existsProductByName(Branch branch, String name) {
+        return branch.getProducts()
+                .stream()
+                .anyMatch(product -> product.getName().equals(name));
+    }
+
+    public Product findProductById(String id) {
+        return this.products
+                .stream()
+                .filter(product -> product.getId().equals(id))
+                .findFirst().orElse(null);
+    }
 }

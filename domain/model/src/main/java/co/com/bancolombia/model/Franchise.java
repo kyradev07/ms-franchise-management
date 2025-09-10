@@ -36,4 +36,16 @@ public final class Franchise {
     public void setBranches(List<Branch> branches) {
         this.branches = branches;
     }
+
+    public Branch findBranchById(String branchId) {
+        return this.branches.stream()
+                .filter(br -> br.getId().equals(branchId))
+                .findFirst().orElse(null);
+    }
+
+    public boolean existsBranchByName(String name) {
+        return this.branches
+                .stream()
+                .anyMatch(fBranch -> fBranch.getName().equals(name));
+    }
 }
