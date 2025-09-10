@@ -207,35 +207,17 @@ resource "aws_cloudwatch_log_group" "app" {
   }
 }
 
-# Service-linked roles with prevent_destroy to avoid deletion issues
-resource "aws_iam_service_linked_role" "ecs" {
-  aws_service_name = "ecs.amazonaws.com"
-  description      = "Service-linked role for Amazon ECS"
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes = [aws_service_name, description]
-  }
+# Reference existing service-linked roles using data sources
+data "aws_iam_role" "ecs_service_role" {
+  name = "AWSServiceRoleForECS"
 }
 
-resource "aws_iam_service_linked_role" "ecs_application_autoscaling" {
-  aws_service_name = "ecs.application-autoscaling.amazonaws.com"
-  description      = "Service-linked role for ECS Application Auto Scaling"
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes = [aws_service_name, description]
-  }
+data "aws_iam_role" "ecs_autoscaling_role" {
+  name = "AWSServiceRoleForApplicationAutoScaling_ECSService"
 }
 
-resource "aws_iam_service_linked_role" "elasticloadbalancing" {
-  aws_service_name = "elasticloadbalancing.amazonaws.com"
-  description      = "Service-linked role for Elastic Load Balancing"
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes = [aws_service_name, description]
-  }
+data "aws_iam_role" "elb_service_role" {
+  name = "AWSServiceRoleForElasticLoadBalancing"
 }
 
 # ECS Cluster
@@ -416,7 +398,7 @@ resource "aws_lb" "main" {
   enable_deletion_protection = false
 
   depends_on = [
-    aws_iam_service_linked_role.elasticloadbalancing
+    data.aws_iam_role.elb_service_role
   ]
 
   tags = {
@@ -490,7 +472,7 @@ resource "aws_ecs_service" "app" {
   depends_on = [
     aws_lb_listener.app,
     aws_iam_role_policy_attachment.ecs_task_execution,
-    aws_iam_service_linked_role.ecs
+    data.aws_iam_role.ecs_service_role
   ]
 
   tags = {
