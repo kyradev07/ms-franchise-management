@@ -2,7 +2,7 @@ package co.com.bancolombia.service;
 
 import co.com.bancolombia.model.Branch;
 import co.com.bancolombia.model.gateway.FranchiseRepositoryPort;
-import co.com.bancolombia.usecase.exceptions.DuplicateBranchException;
+import co.com.bancolombia.service.base.BaseFranchiseService;
 import co.com.bancolombia.usecase.in.branch.AddBranchToFranchiseUseCase;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -12,32 +12,30 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-public class AddBranchToFranchiseService implements AddBranchToFranchiseUseCase {
-
-    private final FranchiseRepositoryPort franchiseRepositoryPort;
+public class AddBranchToFranchiseService extends BaseFranchiseService implements AddBranchToFranchiseUseCase {
 
     public AddBranchToFranchiseService(FranchiseRepositoryPort franchiseRepositoryPort) {
-        this.franchiseRepositoryPort = franchiseRepositoryPort;
+        super(franchiseRepositoryPort);
     }
 
     @Override
     public Mono<Branch> addBranchToFranchise(String franchiseId, Branch branch) {
-        log.info("Adding Branch to Franchise {} with name {}", franchiseId, branch.getName());
+        logOperationStart("Adding Branch %s to Franchise %s", branch.getName(), franchiseId);
 
-        return this.franchiseRepositoryPort.findById(franchiseId)
+        return franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
-                    if (franchise.existsBranchByName(branch.getName())) {
-                        log.warn("Branch with name {} already exists in Franchise", branch.getName());
-                        return Mono.error(new DuplicateBranchException(branch.getName(), franchise.getName()));
-                    }
-
-                    branch.setId(UUID.randomUUID().toString());
-                    franchise.getBranches().add(branch);
-
-                    return this.franchiseRepositoryPort.save(franchise)
-                            .thenReturn(branch);
+                    validateBranchNameNotDuplicated(franchise, branch.getName());
+                    
+                    addBranchToFranchise(franchise, branch);
+                    
+                    return saveFranchiseAndReturn(franchise, branch);
                 })
-                .doOnSuccess(f -> log.info("Branch added successfully!"))
-                .doOnError(error -> log.error("Error while adding Branch {}", error.getMessage()));
+                .doOnSuccess(addedBranch -> logSuccess("Branch addition"))
+                .doOnError(error -> logError("adding Branch", error.getMessage()));
+    }
+
+    private void addBranchToFranchise(co.com.bancolombia.model.Franchise franchise, Branch branch) {
+        branch.setId(UUID.randomUUID().toString());
+        franchise.getBranches().add(branch);
     }
 }

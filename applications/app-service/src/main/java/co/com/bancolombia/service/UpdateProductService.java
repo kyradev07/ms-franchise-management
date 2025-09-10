@@ -3,9 +3,7 @@ package co.com.bancolombia.service;
 import co.com.bancolombia.model.Branch;
 import co.com.bancolombia.model.Product;
 import co.com.bancolombia.model.gateway.FranchiseRepositoryPort;
-import co.com.bancolombia.usecase.exceptions.BranchNotFoundException;
-import co.com.bancolombia.usecase.exceptions.DuplicateProductException;
-import co.com.bancolombia.usecase.exceptions.ProductNotFoundException;
+import co.com.bancolombia.service.base.BaseFranchiseService;
 import co.com.bancolombia.usecase.in.product.UpdateProductUseCase;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,57 +11,44 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
-public class UpdateProductService implements UpdateProductUseCase {
-
-    private final FranchiseRepositoryPort franchiseRepositoryPort;
+public class UpdateProductService extends BaseFranchiseService implements UpdateProductUseCase {
 
     public UpdateProductService(FranchiseRepositoryPort franchiseRepositoryPort) {
-        this.franchiseRepositoryPort = franchiseRepositoryPort;
+        super(franchiseRepositoryPort);
     }
 
     @Override
     public Mono<Product> updateProduct(String franchiseId, String branchId, Product product) {
-        log.info("Updating Product {} in Branch {}", product.getName(), branchId);
+        logOperationStart("Updating Product %s in Branch %s", product.getName(), branchId);
 
-        return this.franchiseRepositoryPort.findById(franchiseId)
+        return franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
-
-                    Branch branchDb = franchise.findBranchById(branchId);
-
-                    if (branchDb == null) {
-                        log.warn("Branch with id {} does not exists in Franchise {}", branchId, franchise.getName());
-                        return Mono.error(new BranchNotFoundException(branchId));
-                    }
-
-                    Product productDb = branchDb.findProductById(product.getId());
-
-                    if (productDb == null) {
-                        log.warn("Product with id {} does not exists in Branch", product.getId());
-                        return Mono.error(new ProductNotFoundException(product.getId()));
-                    }
-
-                    if (branchDb.existsProductByName(branchDb, product.getName())) {
-                        log.warn("Product with name {} already exists in Branch", product.getName());
-                        return Mono.error(new DuplicateProductException(product.getName(), branchDb.getName()));
-                    }
-
-                    String name = product.getName() == null || product.getName().isBlank()
-                            ? productDb.getName()
-                            : product.getName();
-
-                    Integer stock = product.getStock() == null || product.getStock() < 0
-                            ? productDb.getStock()
-                            : productDb.getStock() + product.getStock();
-
-                    productDb.setName(name);
-                    productDb.setStock(stock);
-
-                    return this.franchiseRepositoryPort.save(franchise)
-                            .thenReturn(productDb);
-
+                    Branch branch = findBranchOrThrow(franchise, branchId);
+                    Product existingProduct = findProductOrThrow(branch, product.getId());
+                    validateProductNameNotDuplicated(branch, product.getName());
+                    
+                    updateProductFields(existingProduct, product);
+                    
+                    return saveFranchiseAndReturn(franchise, existingProduct);
                 })
-                .doOnSuccess(f -> log.info("Product updated successfully!"))
-                .doOnError(error -> log.error("Error while updating Product {}", error.getMessage())
-                );
+                .doOnSuccess(updatedProduct -> logSuccess("Product update"))
+                .doOnError(error -> logError("updating Product", error.getMessage()));
+    }
+
+    private void updateProductFields(Product existingProduct, Product updateData) {
+        updateProductName(existingProduct, updateData.getName());
+        updateProductStock(existingProduct, updateData.getStock());
+    }
+
+    private void updateProductName(Product existingProduct, String newName) {
+        if (newName != null && !newName.isBlank()) {
+            existingProduct.setName(newName);
+        }
+    }
+
+    private void updateProductStock(Product existingProduct, Integer stockIncrement) {
+        if (stockIncrement != null && stockIncrement >= 0) {
+            existingProduct.setStock(existingProduct.getStock() + stockIncrement);
+        }
     }
 }

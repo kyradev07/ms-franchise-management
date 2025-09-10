@@ -2,7 +2,7 @@ package co.com.bancolombia.service;
 
 import co.com.bancolombia.model.Branch;
 import co.com.bancolombia.model.gateway.FranchiseRepositoryPort;
-import co.com.bancolombia.usecase.exceptions.BranchNotFoundException;
+import co.com.bancolombia.service.base.BaseFranchiseService;
 import co.com.bancolombia.usecase.exceptions.ProductNotFoundException;
 import co.com.bancolombia.usecase.in.product.DeleteProductFromBranchUseCase;
 import lombok.extern.slf4j.Slf4j;
@@ -11,41 +11,31 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
-public class DeleteProductFromBranchService implements DeleteProductFromBranchUseCase {
-
-    private final FranchiseRepositoryPort franchiseRepositoryPort;
+public class DeleteProductFromBranchService extends BaseFranchiseService implements DeleteProductFromBranchUseCase {
 
     public DeleteProductFromBranchService(FranchiseRepositoryPort franchiseRepositoryPort) {
-        this.franchiseRepositoryPort = franchiseRepositoryPort;
+        super(franchiseRepositoryPort);
     }
 
     @Override
     public Mono<Void> deleteProductFromBranch(String franchiseId, String branchId, String productId) {
-        log.info("Deleting Product from Branch");
+        logOperationStart("Deleting Product %s from Branch %s", productId, branchId);
 
-        return this.franchiseRepositoryPort.findById(franchiseId)
+        return franchiseRepositoryPort.findById(franchiseId)
                 .flatMap(franchise -> {
-                    Branch branch = franchise.findBranchById(branchId);
-
-                    if (branch == null) {
-                        log.warn("Branch with id {} does not exists in Franchise {}", branchId, franchise.getName());
-                        return Mono.error(new BranchNotFoundException(branchId));
-                    }
-
-                    boolean existsProduct = branch
-                            .getProducts()
-                            .removeIf(product -> product.getId().equals(productId));
-
-                    if (!existsProduct) {
-                        log.warn("Product with id {} does not exists in Branch", productId);
-                        return Mono.error(new ProductNotFoundException(productId));
-                    }
-
-                    return this.franchiseRepositoryPort
-                            .save(franchise)
-                            .then();
+                    Branch branch = findBranchOrThrow(franchise, branchId);
+                    removeProductFromBranch(branch, productId);
+                    return saveFranchise(franchise);
                 })
-                .doOnSuccess(f -> log.info("Product deleted successfully!"))
-                .doOnError(error -> log.error("Error while deleting Product {}", error.getMessage()));
+                .doOnSuccess(result -> logSuccess("Product deletion"))
+                .doOnError(error -> logError("deleting Product", error.getMessage()));
+    }
+
+    private void removeProductFromBranch(Branch branch, String productId) {
+        boolean productRemoved = branch.getProducts().removeIf(product -> product.getId().equals(productId));
+        if (!productRemoved) {
+            log.warn("Product with id {} does not exist in Branch", productId);
+            throw new ProductNotFoundException(productId);
+        }
     }
 }
