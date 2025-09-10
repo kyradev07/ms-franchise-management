@@ -4,7 +4,7 @@ server:
 spring:
   data:
     mongodb:
-      uri: ${SPRING_DATA_MONGODB_URI:mongodb://root:franchise-secure-password-2024@localhost:27017/franchise_db?authSource=admin}
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/franchise_db}
   webflux:
     cors:
       allowed-origins:

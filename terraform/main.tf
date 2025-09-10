@@ -363,32 +363,18 @@ resource "aws_ecs_task_definition" "app" {
   family                   = "${var.project_name}-task"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu                      = "2048"
-  memory                   = "4096"
+  cpu                      = "1024"
+  memory                   = "2048"
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([
     {
       name  = "mongodb"
-      image = "mongo:7.0"
+      image = "mongo:5.0"
+      essential = true
       portMappings = [
         {
           containerPort = 27017
-          protocol      = "tcp"
-        }
-      ]
-      environment = [
-        {
-          name  = "MONGO_INITDB_ROOT_USERNAME"
-          value = var.mongodb_username
-        },
-        {
-          name  = "MONGO_INITDB_ROOT_PASSWORD"
-          value = var.mongodb_password
-        },
-        {
-          name  = "MONGO_INITDB_DATABASE"
-          value = var.mongodb_database
         }
       ]
       logConfiguration = {
@@ -399,14 +385,7 @@ resource "aws_ecs_task_definition" "app" {
           "awslogs-stream-prefix" = "mongodb"
         }
       }
-      healthCheck = {
-        command     = ["CMD-SHELL", "mongosh --quiet --eval 'db.adminCommand(\"ping\")'"]
-        interval    = 30
-        timeout     = 10
-        retries     = 3
-        startPeriod = 60
-      }
-      memory = 1536
+      memory = 896
     },
     {
       name  = "${var.project_name}-app"
@@ -424,7 +403,7 @@ resource "aws_ecs_task_definition" "app" {
         },
         {
           name  = "SPRING_DATA_MONGODB_URI"
-          value = "mongodb://${var.mongodb_username}:${var.mongodb_password}@localhost:27017/${var.mongodb_database}?authSource=admin"
+          value = "mongodb://localhost:27017/${var.mongodb_database}"
         },
         {
           name  = "SERVER_PORT"
@@ -434,7 +413,7 @@ resource "aws_ecs_task_definition" "app" {
       dependsOn = [
         {
           containerName = "mongodb"
-          condition     = "HEALTHY"
+          condition     = "START"
         }
       ]
       logConfiguration = {
@@ -445,14 +424,7 @@ resource "aws_ecs_task_definition" "app" {
           "awslogs-stream-prefix" = "app"
         }
       }
-      healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
-        interval    = 30
-        timeout     = 10
-        retries     = 3
-        startPeriod = 90
-      }
-      memory = 2048
+      memory = 1152
     }
   ])
 
