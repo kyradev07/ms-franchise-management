@@ -207,33 +207,8 @@ resource "aws_cloudwatch_log_group" "app" {
   }
 }
 
-# Service-linked roles for ECS and ALB
-resource "aws_iam_service_linked_role" "ecs" {
-  aws_service_name = "ecs.amazonaws.com"
-  description      = "Service-linked role for Amazon ECS"
-
-  lifecycle {
-    ignore_changes = [aws_service_name]
-  }
-}
-
-resource "aws_iam_service_linked_role" "ecs_application_autoscaling" {
-  aws_service_name = "ecs.application-autoscaling.amazonaws.com"
-  description      = "Service-linked role for ECS Application Auto Scaling"
-
-  lifecycle {
-    ignore_changes = [aws_service_name]
-  }
-}
-
-resource "aws_iam_service_linked_role" "elasticloadbalancing" {
-  aws_service_name = "elasticloadbalancing.amazonaws.com"
-  description      = "Service-linked role for Elastic Load Balancing"
-
-  lifecycle {
-    ignore_changes = [aws_service_name]
-  }
-}
+# Service-linked roles already exist in AWS account
+# No need to create them explicitly
 
 # ECS Cluster
 resource "aws_ecs_cluster" "main" {
@@ -412,9 +387,6 @@ resource "aws_lb" "main" {
 
   enable_deletion_protection = false
 
-  depends_on = [
-    aws_iam_service_linked_role.elasticloadbalancing
-  ]
 
   tags = {
     Name = "${var.project_name}-alb"
@@ -486,8 +458,7 @@ resource "aws_ecs_service" "app" {
 
   depends_on = [
     aws_lb_listener.app,
-    aws_iam_role_policy_attachment.ecs_task_execution,
-    aws_iam_service_linked_role.ecs
+    aws_iam_role_policy_attachment.ecs_task_execution
   ]
 
   tags = {
