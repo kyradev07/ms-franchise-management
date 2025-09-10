@@ -1,3 +1,4 @@
+/*
 package co.com.bancolombia.api.config;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -27,3 +28,4 @@ public class CorsConfig {
         return new CorsWebFilter(source);
     }
 }
+*/
