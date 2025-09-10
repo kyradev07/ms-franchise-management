@@ -40,6 +40,18 @@ variable "app_memory" {
   default     = 2048
 }
 
+variable "mongodb_cpu" {
+  description = "MongoDB Fargate instance CPU units to provision (1 vCPU = 1024 CPU units)"
+  type        = number
+  default     = 1024
+}
+
+variable "mongodb_memory" {
+  description = "MongoDB Fargate instance memory to provision (in MiB)"
+  type        = number
+  default     = 2048
+}
+
 variable "app_count" {
   description = "Number of docker containers to run"
   type        = number
