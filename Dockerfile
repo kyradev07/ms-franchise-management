@@ -17,8 +17,8 @@ RUN ./gradlew bootJar -x validateStructure --no-daemon --no-configuration-cache 
 
 FROM eclipse-temurin:21-jre-alpine
 
-# Install bash for potential startup scripts
-RUN apk add --no-cache bash
+# Install bash and curl for health checks
+RUN apk add --no-cache bash curl
 
 WORKDIR /app
 
