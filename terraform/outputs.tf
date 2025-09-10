@@ -29,13 +29,8 @@ output "ecs_cluster_name" {
 }
 
 output "ecs_service_name" {
-  description = "Name of the ECS app service"
+  description = "Name of the ECS service"
   value       = aws_ecs_service.app.name
-}
-
-output "ecs_mongodb_service_name" {
-  description = "Name of the ECS MongoDB service"
-  value       = aws_ecs_service.mongodb.name
 }
 
 output "cloudwatch_log_group_app" {
@@ -46,11 +41,6 @@ output "cloudwatch_log_group_app" {
 output "cloudwatch_log_group_mongodb" {
   description = "CloudWatch log group name for MongoDB"
   value       = aws_cloudwatch_log_group.mongodb.name
-}
-
-output "efs_file_system_id" {
-  description = "ID of the EFS file system for MongoDB"
-  value       = aws_efs_file_system.mongodb.id
 }
 
 output "vpc_id" {

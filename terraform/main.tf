@@ -276,76 +276,6 @@ resource "aws_cloudwatch_log_group" "mongodb" {
   }
 }
 
-# EFS File System for MongoDB persistence
-resource "aws_efs_file_system" "mongodb" {
-  creation_token = "${var.project_name}-mongodb-efs"
-  
-  performance_mode = "generalPurpose"
-  throughput_mode  = "provisioned"
-  provisioned_throughput_in_mibps = 20
-  
-  encrypted = true
-
-  tags = {
-    Name = "${var.project_name}-mongodb-efs"
-  }
-}
-
-# EFS Mount Targets
-resource "aws_efs_mount_target" "mongodb" {
-  count          = length(aws_subnet.private)
-  file_system_id = aws_efs_file_system.mongodb.id
-  subnet_id      = aws_subnet.private[count.index].id
-  security_groups = [aws_security_group.efs.id]
-}
-
-# EFS Access Point
-resource "aws_efs_access_point" "mongodb" {
-  file_system_id = aws_efs_file_system.mongodb.id
-
-  posix_user {
-    gid = 999
-    uid = 999
-  }
-
-  root_directory {
-    path = "/data"
-    creation_info {
-      owner_gid   = 999
-      owner_uid   = 999
-      permissions = "755"
-    }
-  }
-
-  tags = {
-    Name = "${var.project_name}-mongodb-access-point"
-  }
-}
-
-# EFS Security Group
-resource "aws_security_group" "efs" {
-  name        = "${var.project_name}-efs-sg"
-  description = "Security group for EFS"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    from_port   = 2049
-    to_port     = 2049
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project_name}-efs-sg"
-  }
-}
 
 # Reference existing service-linked roles using data sources
 data "aws_iam_role" "ecs_service_role" {
@@ -426,56 +356,7 @@ resource "aws_iam_role_policy" "ecs_task_execution_ecr" {
   })
 }
 
-# EFS Policy for ECS Tasks
-resource "aws_iam_role_policy" "ecs_task_execution_efs" {
-  name = "${var.project_name}-ecs-execution-efs-policy"
-  role = aws_iam_role.ecs_task_execution.id
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "elasticfilesystem:ClientMount",
-          "elasticfilesystem:ClientWrite",
-          "elasticfilesystem:ClientRootAccess"
-        ]
-        Resource = aws_efs_file_system.mongodb.arn
-      }
-    ]
-  })
-}
-
-# Service Discovery Namespace
-resource "aws_service_discovery_private_dns_namespace" "main" {
-  name = "${var.project_name}.local"
-  vpc  = aws_vpc.main.id
-
-  tags = {
-    Name = "${var.project_name}-service-discovery"
-  }
-}
-
-# MongoDB Service Discovery
-resource "aws_service_discovery_service" "mongodb" {
-  name = "mongodb"
-
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.main.id
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-
-    routing_policy = "MULTIVALUE"
-  }
-  
-  tags = {
-    Name = "${var.project_name}-mongodb-discovery"
-  }
-}
 
 # Combined Task Definition (App + MongoDB)
 resource "aws_ecs_task_definition" "app" {
